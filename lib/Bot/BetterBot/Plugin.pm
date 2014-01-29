@@ -38,22 +38,15 @@ sub notice {
    return $self->bot->notice(@_);
 }
 
-sub forkit {
+sub get_var {
    my $self = shift;
-   return $self->bot->forkit(@_);
+   return $self->bot->get_var(@_);
 }
 
-sub authed {
-   my ($self, $user) = @_;
-   
-   if ($self->bot->module('Auth')) {
-      return $self->bot->module('Auth')->authed($user);
-   }
-
-   return 0;
+sub set_var {
+   my $self = shift;
+   return $self->bot->set_var(@_);
 }
-
-
 
 ### Override the following methods in your plugin ###
 

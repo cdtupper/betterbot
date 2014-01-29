@@ -28,6 +28,18 @@ has dsn             => (is => 'ro', isa => 'Maybe[Str]');
 has db_username     => (is => 'ro', isa => 'Maybe[Str]');
 has db_password     => (is => 'ro', isa => 'Maybe[Str]');
 
+has store => (
+   is      => 'ro',
+   isa     => 'HashRef',
+   default => sub { {} },
+   traits  => ['Hash'],
+   handles => {
+      set_var    => 'set',
+      get_var    => 'get',
+      delete_var => 'delete',
+   },
+);
+
 has irc => (
    is       => 'ro',
    isa      => 'POE::Component::IRC',

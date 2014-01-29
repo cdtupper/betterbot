@@ -8,8 +8,14 @@
    "ssl"             : 1,
    "password"        : "s3cret",
    "channels"        : [ "#channel" ],
-   "default_plugins" : [ "Echo" ],
+   "default_plugins" : [ "Echo", "Twitter" ],
    "dsn"             : "dbi:mysql:dbname=gingbot",
    "db_username"     : "gingbot",
-   "db_password"     : "gingbot"
+   "db_password"     : "gingbot",
+   "store"           : {  
+                          "twitter_consumer_key"        : "",
+                          "twitter_consumer_secret"     : "",
+                          "twitter_access_token"        : "",
+                          "twitter_access_token_secret" : ""
+                       } 
 }
