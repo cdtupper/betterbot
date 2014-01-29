@@ -1,0 +1,15 @@
+{
+   "username"        : "gingbot",
+   "nick"            : "gingbot",
+   "real_name"       : "Ging Bot",
+   "quit_msg"        : "I'll show myself out.",
+   "server"          : "irc.domain.tld",
+   "port"            : 6697,
+   "ssl"             : 1,
+   "password"        : "s3cret",
+   "channels"        : [ "#channel" ],
+   "default_plugins" : [ "Echo" ],
+   "dsn"             : "dbi:mysql:dbname=gingbot",
+   "db_username"     : "gingbot",
+   "db_password"     : "gingbot"
+}
