@@ -366,12 +366,10 @@ sub _on_msg {
    my $msg = $self->_process_msg(@args);
 
    foreach my $p ($self->plugins) {
-      try { 
+      try {
          my $response = $p->on_msg($msg);
          $self->reply($msg, $response) if $response;
-      } catch {
-         $self->_plugin_err($p->name, 'on_msg', $_, _get_dest($msg));
-      };
+      } catch { $self->_plugin_err($p->name, 'on_msg', $_, _get_dest($msg)); };
    }
 }
 
@@ -385,9 +383,7 @@ sub _on_emote {
       try { 
          my $response = $p->on_emote($msg); 
          $self->reply($msg, $response) if $response;
-      } catch { 
-         $self->_plugin_err($p->name, 'on_emote', $_, _get_dest($msg)); 
-      };
+      } catch { $self->_plugin_err($p->name, 'on_emote', $_, _get_dest($msg)); };
    }
 }
 
@@ -401,9 +397,7 @@ sub _on_notice {
       try { 
          my $response = $p->on_notice($msg); 
          $self->reply($msg, $response) if $response;
-      } catch { 
-        $self->_plugin_err($p->name, 'on_notice', $_, _get_dest($msg));
-      };
+      } catch { $self->_plugin_err($p->name, 'on_notice', $_, _get_dest($msg)); };
    }
 }
 
@@ -419,11 +413,8 @@ sub _on_join {
             nick    => _get_nick($mask),
             channel => $channel,
          });
-         
          $self->say({body => $response, channel => $channel}) if $response;
-      } catch { 
-         $self->_plugin_err($p->name, 'on_join', $_, $channel); 
-      };
+      } catch { $self->_plugin_err($p->name, 'on_join', $_, $channel); };
    }
 }
 
@@ -440,11 +431,8 @@ sub _on_part {
             channel => $channel,
             msg     => $msg,
          });
-         
          $self->say({body => $response, channel => $channel}) if $response;
-      } catch { 
-         $self->_plugin_err($p->name, 'on_part', $_, $channel); 
-      };
+      } catch { $self->_plugin_err($p->name, 'on_part', $_, $channel); };
    }
 }
 
@@ -463,11 +451,8 @@ sub _on_kick {
             channel     => $channel,
             msg         => $msg,
          });
-
          $self->say({body => $response, channel => $channel}) if $response;
-      } catch { 
-         $self->_plugin_err($p->name, 'on_kick', $_, $channel); 
-      };
+      } catch { $self->_plugin_err($p->name, 'on_kick', $_, $channel); };
    }
 }
 
@@ -483,9 +468,7 @@ sub _on_nick {
             nick     => _get_nick($mask),
             new_nick => $new_nick,
          });
-      } catch { 
-        $self->_plugin_err($p->name, 'on_nick', $_); 
-      };
+      } catch { $self->_plugin_err($p->name, 'on_nick', $_); };
    }
 }
 
@@ -501,9 +484,7 @@ sub _on_quit {
             nick => _get_nick($mask),
             msg  => $msg,
          });
-      } catch { 
-         $self->_plugin_err($p->name, 'on_quit', $_); 
-      };
+      } catch { $self->_plugin_err($p->name, 'on_quit', $_); };
    }
 }
 
@@ -520,11 +501,8 @@ sub _on_topic {
             channel => $channel,
             topic   => $topic,
          });
-
          $self->say({body => $response, channel => $channel}) if $response;
-      } catch { 
-         $self->_plugin_err($p->name, 'on_topic', $_, $channel);
-      };
+      } catch { $self->_plugin_err($p->name, 'on_topic', $_, $channel); };
    }
 }
 
@@ -607,7 +585,7 @@ sub _plugin_err {
    my ($self, $name, $method, $msg, $channel) = @_;
    print "ERROR: Exception in plugin '$name' in method '$method': $msg\n";
    if ($channel) {
-      $self->irc->yield(privmsg => $channel, "Error occurred in plugin' $name'. Check logs.") 
+      $self->irc->yield(privmsg => $channel, "Error occurred in plugin '$name'. Check logs.") 
    }
 }
 
