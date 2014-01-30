@@ -74,6 +74,7 @@ sub BUILD {
 }
 
 
+
 sub run {
    my $self = shift;
 
@@ -94,7 +95,7 @@ sub run {
       inline_states => {
          _start           => sub { $self->_on_start(@_)      },
          irc_001          => sub { $self->_on_connect(@_)    },
-         irc_public       => sub { $self->_on_public(@_)     },
+         irc_public       => sub { $self->_on_msg(@_)        },
          irc_msg          => sub { $self->_on_msg(@_)        },
          irc_ctcp_action  => sub { $self->_on_emote(@_)      },
          irc_notice       => sub { $self->_on_notice(@_)     },
@@ -130,17 +131,20 @@ sub db {
 ### IRC Commands ###
 
 sub say {
-   my ($self, $msg) = @_;
+   my ($self, $args) = @_;
+   
+   croak q/A nonempty message body is required for argument 'body'/ unless $args->{body};
+   croak q/A channel name or 'msg' is required for argument 'channel'/ unless $args->{channel};
+   if ($args->{channel} eq 'msg') {
+      croak q/A nick is required for argument 'nick'/ unless $args->{nick};
+   }
 
    # if bot was prefixed (eg: 'botname: foo bar') prepend user's nick to our response
-   my $body = ($msg->{channel} ne 'msg' and $msg->{prefix})
-      ? "$msg->{nick}: $msg->{body}"
-      : $msg->{body};     
+   my $body = ($args->{channel} ne 'msg' and $args->{prefix} and $args->{nick})
+      ? "$args->{nick}: $args->{body}"
+      : $args->{body};     
 
-   my $dest = _get_dest($msg);
-
-   croak q/A channel name (or 'msg') is required for key 'channel'/ unless $dest;
-   croak q/A nonempty message body is required for the key 'body'/ unless $body;
+   my $dest = _get_dest($args);
 
    # partition our response into multiple messages if message body exceeds MAX_LENGTH
    local $Text::Wrap::columns = $MAX_LENGTH;
@@ -148,43 +152,56 @@ sub say {
    my $wrapped = Text::Wrap::wrap('', '...', $body);
    my @queue = split(/\n+/, $wrapped);
 
-   foreach my $body (@queue) {
-      $self->irc->yield(privmsg => $dest, $body);
-   }
+   $self->irc->yield(privmsg => $dest, $_) foreach (@queue);
 }
 
 
 sub reply {
-   my ($self, $msg, $body) = @_;
+   my ($self, $args, $response) = @_;
    
-   # create local copy of $msg, don't want to modify caller's hashref
-   my %m = %$msg;
-   $m{body} = $body;
+   croak q/A nonempty message body is required for argument 'body'/ unless $args->{body};
+   croak q/A nonempty message body is required for argument 'response'/ unless $response;
+   croak q/A channel name or 'msg' is required for argument 'channel'/ unless $args->{channel};
+   if ($args->{channel} eq 'msg') {
+      croak q/A nick is required for argument 'nick'/ unless $args->{nick};
+   }
    
-   $self->say(\%m);
+   # create local copy of $args, don't want to modify caller's hashref
+   my %r = %$args;
+   $r{body} = $response;
+   
+   $self->say(\%r);
 }
 
 
 sub emote {
-   my ($self, $msg) = @_;
-   my $dest = _get_dest($msg);
+   my ($self, $args) = @_;
    
-   croak q/A channel name (or 'msg') is required for key 'channel'/ unless $dest;
-   croak q/A nonempty message body is required for the key 'body'/ unless $msg->{body};
-   
-   my $body = _truncate($msg->{body}); 
+   croak q/A nonempty message body is required for argument 'body'/ unless $args->{body};
+   croak q/A channel name or 'msg' is required for argument 'channel'/ unless $args->{channel};
+   if ($args->{channel} eq 'msg') {
+      croak q/A nick is required for argument 'nick'/ unless $args->{nick};
+   }
+
+   my $dest = _get_dest($args);
+   my $body = _truncate($args->{body}); 
+
    $self->irc->yield(ctcp => $dest, "ACTION $body");
 }
 
 
 sub notice {
-   my ($self, $msg) = @_;
-   my $dest = _get_dest($msg);
-    
-   croak q/A channel name (or 'msg') is required for key 'channel'/ unless $dest;
-   croak q/A nonempty message body is required for the key 'body'/ unless $msg->{body};
+   my ($self, $args) = @_;
 
-   my $body = _truncate($msg->{body}); 
+   croak q/A nonempty message body is required for argument 'body'/ unless $args->{body};
+   croak q/A channel name or 'msg' is required for argument 'channel'/ unless $args->{channel};
+   if ($args->{channel} eq 'msg') {
+      croak q/A nick is required for argument 'nick'/ unless $args->{nick};
+   }
+   
+   my $dest = _get_dest($args);
+   my $body = _truncate($args->{body}); 
+   
    $self->irc->yield(notice => $dest, $body);
 }
 
@@ -196,44 +213,44 @@ sub channel_info {
 
 
 sub join {
-   my ($self, $channel) = @_;
-   croak 'A channel must be specified' unless $channel;
-   print "Joining $channel\n";
-   $self->irc->yield(join => $channel);
+   my ($self, $args) = @_;
+   croak 'A channel must be specified' unless $args->{channel};
+   print "Joining $args->{channel}\n";
+   $self->irc->yield(join => $args->{channel});
 }
 
 
 sub part {
-   my ($self, $channel) = @_;
-   croak 'A channel must be specified' unless $channel;
-   print "Parting $channel\n";
-   $self->irc->yield(part => $channel);
+   my ($self, $args) = @_;
+   croak 'A channel must be specified' unless $args->{channel};
+   print "Parting $args->{channel}\n";
+   $self->irc->yield(part => $args->{channel});
 }
 
 
 sub kick {
    my ($self, $args) = @_;
+   my $msg = $args->{msg};
 
    croak 'A channel must be specified' unless $args->{channel};
    croak 'A nick must be specified' unless $args->{nick};
    
-   my $msg = $args->{msg};
    $self->irc->yield(kick => $args->{channel}, $args->{nick}, _truncate($msg));
 }
 
 
 sub mode {
-   my ($self, $mode) = @_;
-   croak 'A mode string must be specified' unless $mode;
-   $self->irc->yield(mode => $mode);
+   my ($self, $args) = @_;
+   croak 'A mode string must be specified' unless $args->{mode};
+   $self->irc->yield(mode => $args->{mode});
 }
 
 
 sub oper {
-   my ($self, $username, $password) = @_;
-   croak 'A username is required' unless $username;
-   croak 'A password is required' unless $password;
-   $self->irc->yield(oper => $username, $password);
+   my ($self, $args) = @_;
+   croak 'A username is required' unless $args->{username};
+   croak 'A password is required' unless $args->{password};
+   $self->irc->yield(oper => $args->{username}, $args->{password});
 }
 
 
@@ -246,13 +263,14 @@ sub whois {
 
 sub connect {
    my $self = shift;
-   print 'Connecting to ' . $self->server . ' ' . ($self->ssl ? '+' : '') . $self->port . ' ' . ($self->password || '') . "\n";
+   print 'Connecting to ', $self->server, ' ', ($self->ssl ? '+' : ''), $self->port, ' ',
+      ($self->password || ''), "\n";
    $self->irc->yield(connect => {});
 }
 
 sub quit {
-   my ($self, $msg) = @_;
-   $self->irc->yield(quit => _truncate($msg));
+   my ($self, $args) = @_;
+   $self->irc->yield(quit => _truncate($args->{msg}));
 }
 
 
@@ -303,7 +321,7 @@ sub unload {
    croak "Plugin '$name' not loaded" unless $self->is_loaded(lc($name));
 
    # invoke plugin's on_unload method, but continue with unload if exception is thrown
-   try { $self->plugin(lc($name))->on_unload; } catch { _plugin_err($name, 'on_unload', $_); };
+   try { $self->plugin(lc($name))->on_unload; } catch { $self->_plugin_err($name, 'on_unload', $_); };
    
    $self->_remove_plugin(lc($name));
    print "Unloaded plugin '$name'\n";
@@ -333,33 +351,27 @@ sub _on_start {
 # once a connection is established, join all channels defined in config
 sub _on_connect {
    my $self = shift;
-   $self->join($_) foreach (@{$self->channels});
+   $self->join({channel => $_}) foreach (@{$self->channels});
 }
 
 # For each IRC event, iterate through loaded_plugins and invoke each plugin's
 # appropriate event handler. All plugin methods are non-fatal; if a plugin method
-# throws an exception, an error will be logged to STDOUT, but nothing will be
-# sent to IRC and the bot will continue running.
+# throws an exception, a detailed error will be logged to STDOUT, but only a generic
+# error string will be sent back to IRC. In any case, the bot will continue running.
+# If the method returns a value, it will be sent to the corresponding channel or user.
 
-sub _on_public {
+sub _on_msg {
    my $self = shift;
    my @args = @_[ARG0, ARG1, ARG2];
    my $msg = $self->_process_msg(@args);
 
    foreach my $p ($self->plugins) {
-      try { $p->on_msg($msg); } catch { _plugin_err($p->name, 'on_msg', $_); };
-   }
-}
-
-
-sub _on_msg {
-   my $self = shift;
-   my @args = ($_[ARG0], [$self->nick], $_[ARG2]);
-
-   my $msg = $self->_process_msg(@args);
-   
-   foreach my $p ($self->plugins) {
-      try { $p->on_msg($msg); } catch { _plugin_err($p->name, 'on_msg', $_); };
+      try { 
+         my $response = $p->on_msg($msg);
+         $self->reply($msg, $response) if $response;
+      } catch {
+         $self->_plugin_err($p->name, 'on_msg', $_, _get_dest($msg));
+      };
    }
 }
 
@@ -370,7 +382,12 @@ sub _on_emote {
    my $msg = $self->_process_msg(@args);
    
    foreach my $p ($self->plugins) {
-      try { $p->on_emote($msg); } catch { _plugin_err($p->name, 'on_emote', $_); };
+      try { 
+         my $response = $p->on_emote($msg); 
+         $self->reply($msg, $response) if $response;
+      } catch { 
+         $self->_plugin_err($p->name, 'on_emote', $_, _get_dest($msg)); 
+      };
    }
 }
 
@@ -381,7 +398,12 @@ sub _on_notice {
    my $msg = $self->_process_msg(@args);
    
    foreach my $p ($self->plugins) {
-      try { $p->on_notice($msg); } catch { _plugin_err($p->name, 'on_notice', $_); };
+      try { 
+         my $response = $p->on_notice($msg); 
+         $self->reply($msg, $response) if $response;
+      } catch { 
+        $self->_plugin_err($p->name, 'on_notice', $_, _get_dest($msg));
+      };
    }
 }
 
@@ -392,12 +414,16 @@ sub _on_join {
 
    foreach my $p ($self->plugins) {
       try {
-         $p->on_join({
+         my $response = $p->on_join({
             mask    => $mask,
             nick    => _get_nick($mask),
             channel => $channel,
          });
-      } catch { _plugin_err($p->name, 'on_join', $_); };
+         
+         $self->say({body => $response, channel => $channel}) if $response;
+      } catch { 
+         $self->_plugin_err($p->name, 'on_join', $_, $channel); 
+      };
    }
 }
 
@@ -408,13 +434,17 @@ sub _on_part {
 
    foreach my $p ($self->plugins) {
       try {
-         $p->on_part({
+         my $response = $p->on_part({
             mask    => $mask,
             nick    => _get_nick($mask),
             channel => $channel,
             msg     => $msg,
          });
-      } catch { _plugin_err($p->name, 'on_part', $_); };
+         
+         $self->say({body => $response, channel => $channel}) if $response;
+      } catch { 
+         $self->_plugin_err($p->name, 'on_part', $_, $channel); 
+      };
    }
 }
 
@@ -425,7 +455,7 @@ sub _on_kick {
 
    foreach my $p ($self->plugins) {
       try {
-         $p->on_kick({
+         my $response = $p->on_kick({
             kicker_mask => $kicker_mask,
             kickee_mask => $kickee_mask,
             kicker_nick => _get_nick($kicker_mask),
@@ -433,7 +463,11 @@ sub _on_kick {
             channel     => $channel,
             msg         => $msg,
          });
-      } catch { _plugin_err($p->name, 'on_kick', $_); };
+
+         $self->say({body => $response, channel => $channel}) if $response;
+      } catch { 
+         $self->_plugin_err($p->name, 'on_kick', $_, $channel); 
+      };
    }
 }
 
@@ -449,7 +483,9 @@ sub _on_nick {
             nick     => _get_nick($mask),
             new_nick => $new_nick,
          });
-      } catch { _plugin_err($p->name, 'on_nick', $_); };
+      } catch { 
+        $self->_plugin_err($p->name, 'on_nick', $_); 
+      };
    }
 }
 
@@ -465,7 +501,9 @@ sub _on_quit {
             nick => _get_nick($mask),
             msg  => $msg,
          });
-      } catch { _plugin_err($p->name, 'on_quit', $_); };
+      } catch { 
+         $self->_plugin_err($p->name, 'on_quit', $_); 
+      };
    }
 }
 
@@ -476,13 +514,17 @@ sub _on_topic {
 
    foreach my $p ($self->plugins) {
       try {
-         $p->on_topic({
+         my $response = $p->on_topic({
             mask    => $mask,
             nick    => _get_nick($mask),
             channel => $channel,
             topic   => $topic,
          });
-      } catch { _plugin_err($p->name, 'on_topic', $_); };
+
+         $self->say({body => $response, channel => $channel}) if $response;
+      } catch { 
+         $self->_plugin_err($p->name, 'on_topic', $_, $channel);
+      };
    }
 }
 
@@ -559,10 +601,14 @@ sub _process_msg {
 }
 
 
-# logs an error msg $msg in method $method of plugin $name to STDOUT
+# logs an error msg $msg in method $method of plugin $name to STDOUT,
+# prints error msg to appropriate channel
 sub _plugin_err {
-   my ($name, $method, $msg) = @_;
+   my ($self, $name, $method, $msg, $channel) = @_;
    print "ERROR: Exception in plugin '$name' in method '$method': $msg\n";
+   if ($channel) {
+      $self->irc->yield(privmsg => $channel, "Error occurred in plugin' $name'. Check logs.") 
+   }
 }
 
 

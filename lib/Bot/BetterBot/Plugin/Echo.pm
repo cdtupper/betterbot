@@ -10,9 +10,11 @@ extends 'Bot::BetterBot::Plugin';
 
 override on_msg => sub {
    my ($self, $msg) = @_;
-   
-   if ($msg->{body} =~ /!echo\s+(.*)/) {
-      $self->reply($msg, $1);
+   my ($cmd, $args) = $self->parse_cmd($msg);
+
+   if ($cmd eq 'echo') {
+      return "You must specify a string to echo." unless $args;
+      return $args;
    }
 };
 

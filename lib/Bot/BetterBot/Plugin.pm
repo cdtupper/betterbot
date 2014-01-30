@@ -18,35 +18,40 @@ has 'bot' => (
    required => 1,
 );
 
-sub say {
-   my $self = shift;
-   return $self->bot->say(@_);
+
+# pass through IRC commands to our bot ref
+sub say     { shift->bot->say(@_);     }
+sub reply   { shift->bot->reply(@_);   }
+sub emote   { shift->bot->emote(@_);   }
+sub notice  { shift->bot->notice(@_);  }
+sub get_var { shift->bot->get_var(@_); }
+sub set_var { shift->bot->set_var(@_); }
+
+
+# returns (command, args) for channel messages of the form "betterbot: command args" and
+# "!command args", and for private messages of the form "command args" and "!command args"
+sub parse_cmd {
+   my ($self, $msg) = @_;
+
+   if (($msg->{prefix} or $msg->{channel} eq 'msg') 
+         and $msg->{body} =~ /^([a-zA-Z0-9_]+)\s+(.*)$/ ) {
+      return ($1, $2);
+
+   } elsif ($msg->{body} =~ /^!([a-zA-Z0-9_]+)\s+(.*)$/ ) {
+      return ($1, $2);
+
+   } elsif (($msg->{prefix} or $msg->{channel} eq 'msg') 
+         and $msg->{body} =~ /^([a-zA-Z0-9_]+)\s*$/ ) {
+      return ($1, '');
+
+   } elsif ($msg->{body} =~ /^!([a-zA-Z0-9_]+)\s*$/ ) {
+      return ($1, '');
+
+   } else {
+      return ('', '');
+   }
 }
 
-sub reply {
-   my $self = shift;
-   return $self->bot->reply(@_);
-}
-
-sub emote {
-   my $self = shift;
-   return $self->bot->emote(@_);
-}
-
-sub notice {
-   my $self = shift;
-   return $self->bot->notice(@_);
-}
-
-sub get_var {
-   my $self = shift;
-   return $self->bot->get_var(@_);
-}
-
-sub set_var {
-   my $self = shift;
-   return $self->bot->set_var(@_);
-}
 
 ### Override the following methods in your plugin ###
 

@@ -5,6 +5,7 @@ use warnings;
 
 use Moose;
 use namespace::autoclean;
+use Try::Tiny;
 use Net::Twitter::Lite::WithAPIv1_1;
 
 extends 'Bot::BetterBot::Plugin';
@@ -24,9 +25,9 @@ override on_load => sub {
    $access_token_secret = $self->get_var('twitter_access_token_secret');
 
    unless ($consumer_key and $consumer_secret and $access_token and $access_token_secret) {
-      die  ' Please ensure you have defined ' .
-           ' twitter_consumer_key, twitter_consumer_secret, twitter_access_token, and ' .
-           ' twitter_access_token_secret in the \'store\' section of the config file.';
+      die 'Twitter API keys missing. Please ensure you have defined twitter_consumer_key, ',
+          'twitter_consumer_secret, twitter_access_token, and twitter_access_token_secret ',
+          'in the \'store\' section of the config file.';
    }
    
    $twitter = Net::Twitter::Lite::WithAPIv1_1->new(
@@ -42,32 +43,23 @@ override on_msg => sub {
    my ($self, $msg) = @_;
    
    # check if message is "betterbot: tweet" or "!tweet"
-   if (( $msg->{prefix} and $msg->{body} =~ /^tweet\s+(.*)/ )  
-         or ( $msg->{body} =~ /^!tweet\s+(.*)/ )) {
-      
-      my $tweet_body = $1;
+   my ($cmd, $args) = $self->parse_cmd($msg);
 
-      unless ($tweet_body) {
-         $self->reply($msg, 'You must specify a message to tweet.');
-         return;
-      }
+   if ($cmd eq 'tweet') {
+      my $tweet_body = $args;
+
+      return 'You must specify a message to tweet.' unless $tweet_body;
       
       # post our tweet to the twitter API
-      my $result;
-      eval { $result = $twitter->update($tweet_body); };
+      my $result, my $error;
+      try { $result = $twitter->update($tweet_body); } catch { $error = $_->error; };
 
-      # check if API sent back an error code
-      if ( my $err = $@ ) {
-         die $@ unless blessed $err && $err->isa('Net::Twitter::Lite::Error');
-         my $error = $err->error;
-         $self->reply($msg, "Could not post to Twitter: $error");
-         return;
-      }
+      # if unsuccessful, reply with error
+      return "Could not post to Twitter: $error" unless $result;
 
       # else, tweet posted sucessfully. reply with permalink
-      $self->reply($msg, 'Tweet posted successfully: https://twitter.com/' .
-         $result->{user}->{id_str} . '/status/' . $result->{id_str}
-      );
+      return 'Tweet posted successfully: ' .
+         "https://twitter.com/$result->{user}->{id_str}/status/$result->{id_str}";
    }
 };
 

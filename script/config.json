@@ -1,7 +1,7 @@
 {
-   "username"        : "gingbot",
-   "nick"            : "gingbot",
-   "real_name"       : "Ging Bot",
+   "username"        : "betterbot",
+   "nick"            : "betterbot",
+   "real_name"       : "Better Bot",
    "quit_msg"        : "I'll show myself out.",
    "server"          : "irc.domain.tld",
    "port"            : 6697,
@@ -9,9 +9,9 @@
    "password"        : "s3cret",
    "channels"        : [ "#channel" ],
    "default_plugins" : [ "Echo", "Twitter" ],
-   "dsn"             : "dbi:mysql:dbname=gingbot",
-   "db_username"     : "gingbot",
-   "db_password"     : "gingbot",
+   "dsn"             : "dbi:mysql:dbname=betterbot",
+   "db_username"     : "betterbot",
+   "db_password"     : "betterbot",
    "store"           : {  
                           "twitter_consumer_key"        : "",
                           "twitter_consumer_secret"     : "",
