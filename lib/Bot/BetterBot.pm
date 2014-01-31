@@ -280,8 +280,8 @@ sub quit {
 sub load {
    my ($self, $name) = @_;
 
-   croak 'A plugin name is required' unless $name;
-   croak "$name is already loaded" if $self->is_loaded(lc($name));
+   die "A plugin name is required\n" unless $name;
+   die "$name is already loaded\n" if $self->is_loaded(lc($name));
 
    # Since we are dynamically loading arbitrary code, we try to do the Right Thing (TM)
    # as much as possible here...
@@ -291,7 +291,11 @@ sub load {
    
    # try to load the plugin's module
    my $filename = "Bot/BetterBot/Plugin/$name.pm";
-   require $filename;
+   
+   try { require $filename; } catch { 
+      print "Could not load plugin '$name': $_\n";
+      die "An exception was thrown when 'require'-ing the module. Check logs.\n";
+   };
 
    my $plugin = "Bot::BetterBot::Plugin::$name"->new({
       bot  => $self,
@@ -299,8 +303,8 @@ sub load {
    });
 
    # ensure we get back a Bot::BetterBot::Plugin with the exepcted name
-   croak 'new() did not return an object' unless ($plugin and ref($plugin));
-   croak ref($plugin) . " doesn't look like a $name" unless ref($plugin) =~ /\Q$name/;
+   die "Module's new() method did not return an object\n" unless ($plugin and ref($plugin));
+   die "Module's new() method didn't return the type I was expecting\n" unless ref($plugin) =~ /\Q$name/;
 
    # invoke plugin's on_load method
    $plugin->on_load;
@@ -317,8 +321,8 @@ sub load {
 sub unload {
    my ($self, $name) = @_;
 
-   croak 'Plugin name required' unless $name;
-   croak "Plugin '$name' not loaded" unless $self->is_loaded(lc($name));
+   die "Plugin name required\n" unless $name;
+   die "Plugin '$name' not loaded\n" unless $self->is_loaded(lc($name));
 
    # invoke plugin's on_unload method, but continue with unload if exception is thrown
    try { $self->plugin(lc($name))->on_unload; } catch { $self->_plugin_err($name, 'on_unload', $_); };
@@ -331,7 +335,7 @@ sub unload {
 sub reload {
    my ($self, $name) = @_;
    
-   croak 'Plugin name required' unless $name;
+   die "Plugin name required\n" unless $name;
    
    $self->unload($name);
    return $self->load($name);
@@ -585,7 +589,7 @@ sub _plugin_err {
    my ($self, $name, $method, $msg, $channel) = @_;
    print "ERROR: Exception in plugin '$name' in method '$method': $msg\n";
    if ($channel) {
-      $self->irc->yield(privmsg => $channel, "Error occurred in plugin '$name'. Check logs.") 
+      $self->irc->yield(privmsg => $channel, "Error occurred in plugin '$name' in method '$method'. Check logs.") 
    }
 }
 

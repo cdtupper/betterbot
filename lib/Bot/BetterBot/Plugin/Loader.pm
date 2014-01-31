@@ -18,24 +18,29 @@ override on_msg => sub {
    my ($name) = split(/\s+/, $args);
    $name = ucfirst($name) if $name;
 
+   my $err = '';
+
    if ($cmd eq 'load') {
       return 'You must specify a plugin to load.' unless $name;
       
-      try { $self->bot->load($name); } catch { return "Failed to load plugin '$name'. Check logs."; };
+      try { $self->bot->load($name); } catch {  $err = $_; };
+      return $err if $err;
       return "Plugin '$name' loaded successfully.";
    }
    
    if ($cmd eq 'unload') {
       return 'You must specify a plugin to unload.' unless $name;
       
-      try { $self->bot->unload($name); } catch { return "Failed to unload plugin '$name'. Check logs."; };
+      try { $self->bot->unload($name); } catch { $err = $_; };
+      return $err if $err;
       return "Plugin '$name' unloaded successfully.";
    }
    
    if ($cmd eq 'reload') {
       return 'You must specify a plugin to reload.' unless $name;
       
-      try { $self->bot->reload($name); } catch { return "Failed to reload plugin '$name'. Check logs."; };
+      try { $self->bot->reload($name); } catch { $err = $_; };
+      return $err if $err;
       return "Plugin '$name' reloaded successfully.";
    }
 };
