@@ -50,6 +50,9 @@ override on_msg => sub {
 
       return 'You must specify a message to tweet.' unless $tweet_body;
       
+      my $length = length($tweet_body);
+      return "Your tweet was $length characters. Please limit to 140." if $length > 140;
+      
       # post our tweet to the twitter API
       my $result, my $error;
       try { $result = $twitter->update($tweet_body); } catch { $error = $_->error; };
