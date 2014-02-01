@@ -280,8 +280,8 @@ sub quit {
 sub load {
    my ($self, $name) = @_;
 
-   die "A plugin name is required\n" unless $name;
-   die "$name is already loaded\n" if $self->is_loaded(lc($name));
+   die "A plugin name is required.\n" unless $name;
+   die "Plugin $name is already loaded.\n" if $self->is_loaded(lc($name));
 
    # Since we are dynamically loading arbitrary code, we try to do the Right Thing (TM)
    # as much as possible here...
@@ -291,10 +291,11 @@ sub load {
    
    # try to load the plugin's module
    my $filename = "Bot/BetterBot/Plugin/$name.pm";
+   die "No plugin with that name is currently installed.\n" unless -e $filename;
    
    try { require $filename; } catch { 
       print "Could not load plugin '$name': $_\n";
-      die "An exception was thrown when 'require'-ing the module. Check logs.\n";
+      die "An error occurred importing the module. Check logs..\n";
    };
 
    my $plugin = "Bot::BetterBot::Plugin::$name"->new({
@@ -303,8 +304,8 @@ sub load {
    });
 
    # ensure we get back a Bot::BetterBot::Plugin with the exepcted name
-   die "Module's new() method did not return an object\n" unless ($plugin and ref($plugin));
-   die "Module's new() method didn't return the type I was expecting\n" unless ref($plugin) =~ /\Q$name/;
+   die "Module's new() method did not return an object.\n" unless ($plugin and ref($plugin));
+   die "Module's new() method didn't return the type I was expecting.\n" unless ref($plugin) =~ /\Q$name/;
 
    # invoke plugin's on_load method
    $plugin->on_load;
@@ -313,7 +314,7 @@ sub load {
    # an exception, so we add the plugin to our loaded_plugins hash
    $self->_add_plugin(lc($name), $plugin);
    
-   print "Loaded plugin '$name'\n";
+   print "Loaded plugin $name.\n";
    return $plugin;
 }
 
@@ -321,21 +322,21 @@ sub load {
 sub unload {
    my ($self, $name) = @_;
 
-   die "Plugin name required\n" unless $name;
-   die "Plugin '$name' not loaded\n" unless $self->is_loaded(lc($name));
+   die "Plugin name required.\n" unless $name;
+   die "Plugin $name not loaded.\n" unless $self->is_loaded(lc($name));
 
    # invoke plugin's on_unload method, but continue with unload if exception is thrown
    try { $self->plugin(lc($name))->on_unload; } catch { $self->_plugin_err($name, 'on_unload', $_); };
    
    $self->_remove_plugin(lc($name));
-   print "Unloaded plugin '$name'\n";
+   print "Unloaded plugin $name.\n";
 }
 
 
 sub reload {
    my ($self, $name) = @_;
    
-   die "Plugin name required\n" unless $name;
+   die "Plugin name required.\n" unless $name;
    
    $self->unload($name);
    return $self->load($name);
