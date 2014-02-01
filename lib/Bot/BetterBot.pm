@@ -292,12 +292,8 @@ sub load {
    
    # try to load the plugin's module
    my ($volume, $directory, $file) = File::Spec->splitpath(__FILE__);
-   die "No plugin with that name is currently installed.\n" unless -e "$volume$directory/BetterBot/Plugin/$name.pm";
+   die "No plugin with that name is currently installed.\n" unless -e "$volume$directory"."BetterBot/Plugin/$name.pm";
     
-   # try to load the plugin's module
-   my $filename = "Bot/BetterBot/Plugin/$name.pm";
-   die "No plugin with that name is currently installed.\n" unless -e $filename;
-   
    try { require $filename; } catch { 
       print "Could not load plugin '$name': $_\n";
       die "An error occurred importing the module. Check logs..\n";
