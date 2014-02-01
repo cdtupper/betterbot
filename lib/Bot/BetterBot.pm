@@ -6,6 +6,7 @@ use strict;
 use warnings;
 
 use Carp;
+use File::Spec;
 use Try::Tiny;
 use Moose;
 use namespace::autoclean;
@@ -289,6 +290,10 @@ sub load {
    # we don't want people to !load ../../../etc/passwd
    $name =~ s|/||g;
    
+   # try to load the plugin's module
+   my ($volume, $directory, $file) = File::Spec->splitpath(__FILE__);
+   die "No plugin with that name is currently installed.\n" unless -e "$volume$directory/BetterBot/Plugin/$name.pm";
+    
    # try to load the plugin's module
    my $filename = "Bot/BetterBot/Plugin/$name.pm";
    die "No plugin with that name is currently installed.\n" unless -e $filename;
