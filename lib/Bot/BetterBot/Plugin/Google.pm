@@ -60,7 +60,7 @@ override on_msg => sub {
       return "$link :: $title :: $desc";
    }
 
-   if ($cmd eq 'googleimage' or $cmd eq 'gi') {
+   if ($cmd eq 'googleimage' or $cmd eq 'gi' or $cmd eq 'gis') {
       return 'You must specify a search query.' unless $query;
       my $result = $google_image->search($query);
       return $result->raw->{items}->[0]->{link};
