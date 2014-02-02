@@ -38,7 +38,7 @@ override on_load => sub {
       lr          => 'lang_en',
       num         => 1,
       prettyprint => 'false',
-      search_type => 'image'
+      searchType => 'image'
    });
 };
 
