@@ -45,7 +45,8 @@ override on_msg => sub {
 
       my $link  = $result->raw->{items}->[0]->{link};
       my $title = $result->raw->{items}->[0]->{title};
-      my $desc  = ($result->raw->{items}->[0]->{snippet} =~ s/\R//g);
+      my $desc  = $result->raw->{items}->[0]->{snippet};
+      $desc =~ s/\R//g;
 
       return "$link :: $title :: $desc";
    }
