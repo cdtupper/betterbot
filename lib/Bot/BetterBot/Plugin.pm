@@ -35,17 +35,17 @@ sub parse_cmd {
 
    if (($msg->{prefix} or $msg->{channel} eq 'msg') 
          and $msg->{body} =~ /^([a-zA-Z0-9_]+)\s+(.*)$/ ) {
-      return ($1, $2);
+      return (lc($1), $2);
 
    } elsif ($msg->{body} =~ /^!([a-zA-Z0-9_]+)\s+(.*)$/ ) {
-      return ($1, $2);
+      return (lc($1), $2);
 
    } elsif (($msg->{prefix} or $msg->{channel} eq 'msg') 
          and $msg->{body} =~ /^([a-zA-Z0-9_]+)\s*$/ ) {
-      return ($1, '');
+      return (lc($1), '');
 
    } elsif ($msg->{body} =~ /^!([a-zA-Z0-9_]+)\s*$/ ) {
-      return ($1, '');
+      return (lc($1), '');
 
    } else {
       return ('', '');

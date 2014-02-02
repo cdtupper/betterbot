@@ -16,6 +16,8 @@
                           "twitter_consumer_key"        : "",
                           "twitter_consumer_secret"     : "",
                           "twitter_access_token"        : "",
-                          "twitter_access_token_secret" : ""
+                          "twitter_access_token_secret" : "",
+                          "google_api_key"              : "",
+                          "google_cx_id"                : ""
                        } 
 }
