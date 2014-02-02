@@ -12,6 +12,7 @@ extends 'Bot::BetterBot::Plugin';
 my $api_key;
 my $cx;
 my $google;
+my $google_image;
 
 override on_load => sub {
    my $self = shift;
@@ -31,6 +32,14 @@ override on_load => sub {
       num         => 1,
       prettyprint => 'false',
    });
+   $google_image = WWW::Google::CustomSearch->new({
+      api_key     => $api_key,
+      cx          => $cx,
+      lr          => 'lang_en',
+      num         => 1,
+      prettyprint => 'false',
+      search_type => 'image'
+   });
 };
 
 override on_msg => sub {
@@ -38,7 +47,7 @@ override on_msg => sub {
    
    my ($cmd, $query) = $self->parse_cmd($msg);
 
-   if ($cmd eq 'google') {
+   if ($cmd eq 'google' or $cmd eq 'g') {
       return 'You must specify a search query.' unless $query;
       
       my $result = $google->search($query);
@@ -49,6 +58,11 @@ override on_msg => sub {
       $desc =~ s/\R//g;
 
       return "$link :: $title :: $desc";
+   }
+
+   if ($cmd eq 'googleimage' or $cmd eq 'gi') {
+      return 'You must specify a search query.' unless $query;
+      return $result->raw->{items}->[0]->{link};
    }
 };
 
